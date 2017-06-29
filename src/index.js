@@ -67,7 +67,7 @@ export default function fileLoader(content) {
   if (config.publicPath !== undefined) {
     // support functions as publicPath to generate them dynamically
     const generatedPublicPath = typeof config.publicPath === 'function' ? config.publicPath(url) : config.publicPath + url;
-    if (config.raw === false) {
+    if (config.raw === true) {
       publicPath = generatedPublicPath;
     } else {
       publicPath = JSON.stringify(generatedPublicPath);
@@ -78,7 +78,7 @@ export default function fileLoader(content) {
     this.emitFile(outputPath, content);
   }
 
-  return `export default = ${publicPath};`;
+  return `module.exports = ${publicPath};`;
 }
 
 export const raw = true;
