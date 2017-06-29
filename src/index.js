@@ -66,9 +66,12 @@ export default function fileLoader(content) {
   let publicPath = `__webpack_public_path__ + ${JSON.stringify(url)}`;
   if (config.publicPath !== undefined) {
     // support functions as publicPath to generate them dynamically
-    publicPath = JSON.stringify(
-      typeof config.publicPath === 'function' ? config.publicPath(url) : config.publicPath + url,
-    );
+    const generatedPublicPath = typeof config.publicPath === 'function' ? config.publicPath(url) : config.publicPath + url;
+    if (config.raw === false) {
+      publicPath = generatedPublicPath;
+    } else {
+      publicPath = JSON.stringify(generatedPublicPath);
+    }
   }
 
   if (query.emitFile === undefined || query.emitFile) {
