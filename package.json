@@ -1,5 +1,5 @@
 {
-  "name": "file-loader",
+  "name": "@skpm/file-loader",
   "version": "1.0.0",
   "author": "Tobias Koppers @sokra",
   "description": "file loader module for webpack",
