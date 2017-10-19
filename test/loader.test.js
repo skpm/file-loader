@@ -1,12 +1,13 @@
 /* eslint-disable no-useless-escape, no-unused-vars */
-import fileLoader from '../src';
+import path from 'path';
+import loader from '../src';
 
 const run = function run(resourcePath, query, content = new Buffer('1234')) {
   let file = null;
 
   const context = {
     resourcePath,
-    query: `?${query}`,
+    query: `?${query || ''}`,
     options: {
       context: '/this/is/the/context',
     },
@@ -16,7 +17,7 @@ const run = function run(resourcePath, query, content = new Buffer('1234')) {
     },
   };
 
-  const result = fileLoader.call(context, content);
+  const result = loader.call(context, content);
 
   return {
     file,
@@ -29,8 +30,8 @@ function runWithOptions(resourcePath, options, content = new Buffer('1234')) {
 
   const context = {
     resourcePath,
+    query: options,
     options: {
-      fileLoader: options,
       context: '/this/is/the/context',
     },
     emitFile(url, content2) {
@@ -39,7 +40,7 @@ function runWithOptions(resourcePath, options, content = new Buffer('1234')) {
     },
   };
 
-  const result = fileLoader.call(context, content);
+  const result = loader.call(context, content);
 
   return {
     file,
@@ -57,6 +58,7 @@ describe('correct-filename', () => {
     test('81dc9bdb52d04dc20036dbd8313ed055.txt', 'file.txt', '');
     test('81dc9bdb52d04dc20036dbd8313ed055.bin', '', '');
   });
+
   it('should process name correctly', () => {
     test('file.txt', '/file.txt', 'name=[name].[ext]');
     test('file.png', '/file.png', 'name=[name].[ext]');
@@ -71,9 +73,11 @@ describe('correct-filename', () => {
     test('_/_/dir/sub/file.txt', '/this/is/dir/sub/file.txt', 'name=[path][name].[ext]');
     test('dir/sub/file.txt', '/this/is/dir/sub/file.txt', 'name=[path][name].[ext]&context=/this/is');
   });
+
   it('should process hash correctly', () => {
     test('d93591bdf7860e1e4ee2fca799911215.txt', '/file.txt', '', new Buffer('4321'));
   });
+
   it('should process hash options correctly', () => {
     test('81dc9.txt', '/file.txt', 'name=[hash:5].[ext]');
     test('d4045.txt', '/file.txt', 'name=[sha512:hash:5].[ext]');
@@ -90,11 +94,13 @@ describe('publicPath option', () => {
       'module.exports = "http://cdn/81dc9bdb52d04dc20036dbd8313ed055.txt";',
     );
   });
+
   it('should override public path when given empty string', () => {
     expect(run('/file.txt', 'publicPath=').result).toEqual(
       'module.exports = "81dc9bdb52d04dc20036dbd8313ed055.txt";',
     );
   });
+
   it('should use webpack public path when not set', () => {
     expect(run('/file.txt').result).toEqual(
       'module.exports = __webpack_public_path__ + "81dc9bdb52d04dc20036dbd8313ed055.txt";',
@@ -107,12 +113,15 @@ describe('useRelativePath option', () => {
     expect(run('/this/is/the/context/file.txt', 'useRelativePath=true').result).toEqual(
       'module.exports = __webpack_public_path__ + \"./81dc9bdb52d04dc20036dbd8313ed055.txt\";',
     );
+
     expect(run('/this/is/file.txt', 'useRelativePath=true').result).toEqual(
       'module.exports = __webpack_public_path__ + \"../../81dc9bdb52d04dc20036dbd8313ed055.txt\";',
     );
+
     expect(run('/this/file.txt', 'context=/this/is/the/&useRelativePath=true').result).toEqual(
       'module.exports = __webpack_public_path__ + \"../../81dc9bdb52d04dc20036dbd8313ed055.txt\";',
     );
+
     expect(run('/this/file.txt', 'context=/&useRelativePath=true').result).toEqual(
       'module.exports = __webpack_public_path__ + \"this/81dc9bdb52d04dc20036dbd8313ed055.txt\";',
     );
@@ -121,20 +130,40 @@ describe('useRelativePath option', () => {
 
 describe('outputPath function', () => {
   it('should be supported', () => {
-    const outputFunc = value => '/path/set/by/func';
     const options = {};
-    options.outputPath = outputFunc;
-    expect(runWithOptions('/this/is/the/context/file.txt', options).result).toEqual(
-      'module.exports = __webpack_public_path__ + \"/path/set/by/func\";',
-    );
+    options.outputPath = value => '/path/set/by/func';
+
+    expect(runWithOptions('/this/is/the/context/file.txt', options).result)
+      .toEqual(
+        'module.exports = __webpack_public_path__ + \"/path/set/by/func\";',
+      );
   });
+
   it('should be ignored if you set useRelativePath', () => {
-    const outputFunc = value => '/path/set/by/func';
     const options = {};
-    options.outputPath = outputFunc;
+    options.outputPath = value => '/path/set/by/func';
     options.useRelativePath = true;
-    expect(runWithOptions('/this/is/the/context/file.txt', options).result).toEqual(
-      'module.exports = __webpack_public_path__ + \"./81dc9bdb52d04dc20036dbd8313ed055.txt\";',
-    );
+
+    expect(runWithOptions('/this/is/the/context/file.txt', options).result)
+      .toEqual(
+        'module.exports = __webpack_public_path__ + \"./81dc9bdb52d04dc20036dbd8313ed055.txt\";',
+      );
+  });
+});
+
+describe('raw option', () => {
+  it('should be supported', () => {
+    const options = {
+      raw: true,
+    };
+    options.outputPath = value => path.join('..', 'Resources', '_webpack_resources', value);
+    options.publicPath = value => `"file://" + context.plugin.urlForResourceNamed("${value.split(
+      '../Resources/',
+    )[1]}").path()`;
+
+    expect(runWithOptions('/this/is/the/context/file.txt', options).result)
+      .toEqual(
+        'module.exports = \"file://\" + context.plugin.urlForResourceNamed(\"_webpack_resources/81dc9bdb52d04dc20036dbd8313ed055.txt\").path();',
+      );
   });
 });
