@@ -1,3 +1,6 @@
+/* eslint-disable
+  multiline-ternary,
+*/
 import path from 'path';
 import loaderUtils from 'loader-utils';
 import validateOptions from 'schema-utils';
@@ -10,58 +13,61 @@ export default function loader(content) {
 
   validateOptions(schema, options, 'File Loader');
 
-  const context = options.context || this.options.context;
+  const context = options.context || this.rootContext || (this.options && this.options.context);
 
-  let url = loaderUtils.interpolateName(this, options.name, {
+  const url = loaderUtils.interpolateName(this, options.name, {
     context,
     content,
     regExp: options.regExp,
   });
 
-  let outputPath = '';
+  let outputPath = url;
 
   if (options.outputPath) {
-    // support functions as outputPath to generate them dynamically
-    outputPath = (
-      typeof options.outputPath === 'function' ? options.outputPath(url) : options.outputPath
-    );
+    if (typeof options.outputPath === 'function') {
+      outputPath = options.outputPath(url);
+    } else {
+      outputPath = path.posix.join(options.outputPath, url);
+    }
   }
 
-  const filePath = this.resourcePath;
-
   if (options.useRelativePath) {
-    const issuerContext = (this._module && this._module.issuer
-      && this._module.issuer.context) || context;
+    const filePath = this.resourcePath;
 
-    const relativeUrl = issuerContext && path.relative(issuerContext, filePath).split(path.sep).join('/');
+    const issuer = options.context
+      ? context
+      : (
+        this._module &&
+        this._module.issuer &&
+        this._module.issuer.context
+      );
+
+    const relativeUrl = issuer && path.relative(issuer, filePath)
+      .split(path.sep)
+      .join('/');
 
     const relativePath = relativeUrl && `${path.dirname(relativeUrl)}/`;
     // eslint-disable-next-line no-bitwise
     if (~relativePath.indexOf('../')) {
       outputPath = path.posix.join(outputPath, relativePath, url);
     } else {
-      outputPath = relativePath + url;
+      outputPath = path.posix.join(relativePath, url);
     }
-
-    url = relativePath + url;
-  } else if (options.outputPath) {
-    // support functions as outputPath to generate them dynamically
-    outputPath = typeof options.outputPath === 'function' ? options.outputPath(url) : options.outputPath + url;
-
-    url = outputPath;
-  } else {
-    outputPath = url;
   }
 
-  let publicPath = `__webpack_public_path__ + ${JSON.stringify(url)}`;
+  let publicPath = `__webpack_public_path__ + ${JSON.stringify(outputPath)}`;
 
-  if (options.publicPath !== undefined) {
-    // support functions as publicPath to generate them dynamically
-    const generatedPublicPath = typeof options.publicPath === 'function' ? options.publicPath(url) : options.publicPath + url;
-    if (options.raw === true) {
-      publicPath = generatedPublicPath;
+  if (options.publicPath) {
+    if (typeof options.publicPath === 'function') {
+      publicPath = options.publicPath(url);
+    } else if (options.publicPath.endsWith('/')) {
+      publicPath = options.publicPath + url;
     } else {
-      publicPath = JSON.stringify(generatedPublicPath);
+      publicPath = `${options.publicPath}/${url}`;
+    }
+
+    if (!options.raw) {
+      publicPath = JSON.stringify(publicPath);
     }
   }
 
