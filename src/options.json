@@ -13,6 +13,9 @@
     },
     "emitFile": {
       "type": "boolean"
+    },
+    "raw": {
+      "type": "boolean"
     }
   },
   "additionalProperties": true
