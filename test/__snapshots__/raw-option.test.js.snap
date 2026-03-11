@@ -1,0 +1,10 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`"raw" option should avoid stringifying values returned from publicPath() and outputPath() if set: module 1`] = `
+Object {
+  "assets": Array [
+    "../Resources/_webpack_resources/39f5c21c1aee6ff21844c6e1d8251d97.png",
+  ],
+  "source": "module.exports = \\"file://\\" + context.plugin.urlForResourceNamed(\\"_webpack_resources/39f5c21c1aee6ff21844c6e1d8251d97.png\\").path();",
+}
+`;

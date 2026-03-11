@@ -46,7 +46,9 @@ export default function loader(content) {
       }${url}`;
     }
 
-    publicPath = JSON.stringify(publicPath);
+    if (!options.raw) {
+      publicPath = JSON.stringify(publicPath);
+    }
   }
 
   if (options.postTransformPublicPath) {

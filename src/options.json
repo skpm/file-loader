@@ -46,6 +46,10 @@
       "description": "Enables/Disables emit files (https://github.com/webpack-contrib/file-loader#emitfile).",
       "type": "boolean"
     },
+    "raw": {
+      "description": "[skpm] If true, the loader will not stringify values returned from publicPath() and outputPath().",
+      "type": "boolean"
+    },
     "regExp": {
       "description": "A Regular Expression to one or many parts of the target file path. The capture groups can be reused in the name property using [N] placeholder (https://github.com/webpack-contrib/file-loader#regexp).",
       "anyOf": [
